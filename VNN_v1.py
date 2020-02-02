@@ -41,8 +41,9 @@ def sigder(x):
 class NeuralNetwork:
     #Inputs sind Tiefe der jew. Schicht und Groesse der Minibatchs
     def __init__(self, inp, lay1, outp, mbsize, schrittweite):
-        self.bias       = np.ones([1, mbsize])
         self.inputOB    = np.zeros([inp, mbsize])
+        self.bias       = np.ones([1, len(self.inputOB[0])])
+        #self.input      = np.zeros([inp+1, mbsize]) #785x10       
         self.input      = np.concatenate((self.inputOB,self.bias)) #785x10
         self.lay1OB     = np.zeros([lay1, mbsize])
         self.lay1       = np.zeros([lay1+1, mbsize])
@@ -104,6 +105,7 @@ class NeuralNetwork:
         #for i in range(0,12,10):  
  #irgendwas stimmt mit testy nicht           
             self.inputOB = pictures[:,i:i+self.mbsize]
+            #self.input   = np.concatenate((self.inputOB,self.bias)) #785x10
             testy = numbers[:,i:i+self.mbsize]
             
             self.feedforward()
@@ -114,9 +116,9 @@ class NeuralNetwork:
 network = NeuralNetwork(784, 30, 10, 10, 0.5) 
 #print(network.weights1)
 
-network.train(train_x.transpose(),train_y_dec.transpose())
+#network.train(train_x.transpose(),train_y_dec.transpose())
     
-network.input = train_x.transpose()[:,0]
+network.inputOB = train_x.transpose()[:,0]
 network.feedforward()
 #print(network.input)
 #print(network.weights1)
