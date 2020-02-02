@@ -50,8 +50,12 @@ class NeuralNetwork:
         self.mbsize = mbsize
         self.schrittweite = schrittweite
         
-        self.weights1   = np.random.rand(lay1,inp+1)   
-        self.weights2   = np.random.rand(outp,lay1+1)   
+        if os.path.exists("Weights1.txt") == True:
+            self.weights1 = np.loadtxt("Weights1.txt")
+            self.weights2 = np.loadtxt("Weights2.txt")
+        else:
+            self.weights1 = np.random.rand(lay1,inp+1)
+            self.weights2 = np.random.rand(outp,lay1+1)   
     
         #berechnet den output aus dem aktuellen input
     def feedforward(self):
@@ -81,6 +85,12 @@ class NeuralNetwork:
         #hier werden die Gewichte angepasst    
         self.weights1 = self.weights1-self.schrittweite*grad1
         self.weights2 = self.weights2-self.schrittweite*grad2
+        
+        np.savetxt("Weights1.txt", self.weights1)
+        np.savetxt("Weights2.txt", self.weights2)
+        
+        
+        
         
         #bekommt kompletten Trainingsdatensatz
     def train(self, pictures, numbers):
