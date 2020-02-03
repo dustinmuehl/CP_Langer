@@ -9,6 +9,7 @@ import math
 import numpy as np
 import gzip # Entzipper für das Auslesen der Testdaten
 import pickle #Einlesen der Testdaten in einen Array
+import os.path
 
 #Testdaten einlesen
 with gzip.open('mnist.pkl.gz', 'rb') as f: #Öffnet das Trainingsdatenset
@@ -21,10 +22,16 @@ with gzip.open('mnist.pkl.gz', 'rb') as f: #Öffnet das Trainingsdatenset
 
 train_x = train_set[0] #Pixeldatenset  
 train_y = train_set[1] #Ziffern in Computerdarstellung
+test_x = test_set[0]
+test_y = test_set[1]
 #Ziffern in Nullvektoren mit Eins an der i-ten Stelle
 train_y_dec = np.zeros([len(train_y),10])
 for i in range(len(train_y)):
     train_y_dec[i][train_y[i]] = 1
+    
+test_y_dec = np.zeros([len(test_y),10])
+for i in range(len(test_y)):
+    test_y_dec[i][test_y[i]] = 1
    
 
 #Sigmoidfunktion
@@ -39,40 +46,56 @@ def sigder(x):
 
 class NeuralNetwork:
     #Inputs sind Tiefe der jew. Schicht und Groesse der Minibatchs
-    def __init__(self, inp, lay1, outp, mbsize, schrittweite):
-        self.input      = np.zeros([inp, mbsize])
-        self.lay1       = np.zeros([lay1, mbsize])
-        self.output     = np.zeros([outp, mbsize])
+    def __init__(self, inp, lay, outp, mbsize, schrittweite):
+        self.bias      = np.ones([1, mbsize])       #1x10
+        
+        self.inputOB      = np.zeros([inp, mbsize]) #784x10
+        self.input      = np.zeros([inp+1, mbsize]) #785x10
+        
+        self.layOB       = np.zeros([lay, mbsize])  #30x10
+        self.lay       =  np.zeros([lay+1, mbsize]) #31x10
+        
+        self.output     = np.zeros([outp, mbsize])  #10x10
         
         self.mbsize = mbsize
         self.schrittweite = schrittweite
         
-        self.weights1   = np.random.rand(lay1,inp)   
-        self.weights2   = np.random.rand(outp,lay1)   
-    
+#       if os.path.exists("Weights1.txt") == True:
+#            self.weights1 = np.loadtxt("Weights1.txt")
+#            self.weights2 = np.loadtxt("Weights2.txt")
+#        else:
+        self.weights1 = np.random.rand(lay,inp+1) #30x785
+        self.weights2 = np.random.rand(outp,lay+1) #10x31  
+        
         #berechnet den output aus dem aktuellen input
     def feedforward(self):
-        self.lay1 = sig(self.weights1.dot(self.input))
-        self.output = sig(self.weights2.dot(self.lay1))
+        self.input = np.concatenate((self.inputOB,self.bias))
+        self.layOB = sig(self.weights1.dot(self.input))
+        self.lay = np.concatenate((self.layOB,self.bias))
+        self.output = sig(self.weights2.dot(self.lay))
        
 
     def backprop(self, testy):
         #grad1 sind die Ableitungen nach den Gewichten der ersten Matrix
-        grad2 = np.zeros(self.weights2.shape)
-        grad1 = np.zeros(self.weights1.shape)
+        grad2 = np.zeros(self.weights2.shape)   #30x785
+        grad1 = np.zeros(self.weights1.shape)   #10x31
         
         #Hilfsmatrizen
-        HM2 = self.weights2.dot(self.lay1)
-        HM1 = self.weights1.dot(self.input)
- 
-#kann sein, dass bei den Formeln für die Ableitungen irgendwo ein Fehler ist       
+        HM2 = self.weights2.dot(self.lay)       #10x10
+        HM1 = self.weights1.dot(self.input)     #30x10
+        delta = np.zeros(self.output.shape)     #10x10
+        quasidelta = np.zeros(self.lay.shape)   #31x10
+              
         for i in range(len(self.output)):
-            for j in range(len(self.lay1)):
-                grad2[i][j] = np.sum(self.output[i,:]-testy[i,:])*np.sum(sigder(HM2[i,:]))*np.sum(self.lay1[j,:])
-                
-        for i in range(len(self.lay1)):
-            for j in range(len(self.input)):
-                grad1[i][j] = np.sum(self.output-testy)*np.sum(sigder(HM2))*np.sum(self.weights2[:,i])*np.sum(sigder(HM1[i,:]))*np.sum(self.input[j,:])
+            delta[i,:] = (self.output[i,:]-testy[i,:])*sigder(HM2[i,:])
+            for j in range(len(self.lay)):             
+                grad2[i][j] = np.sum(delta[i,:]*self.lay[j,:])
+          
+
+        for i in range(len(self.lay)-1):
+            quasidelta[i,:] = np.sum(delta*self.weights2[:,i],axis =0)*sigder(HM1[i,:])                
+            for j in range(len(self.input)):               
+                grad1[i][j] = np.sum(quasidelta[i,:]*self.input[j,:])
          
         #hier werden die Gewichte angepasst    
         self.weights1 = self.weights1-self.schrittweite*grad1
@@ -81,27 +104,40 @@ class NeuralNetwork:
         #bekommt kompletten Trainingsdatensatz
     def train(self, pictures, numbers):
         #schneide pictures und numbers in teile der länge mbsize
-    
+   
         for i in range(0,len(pictures),self.mbsize):
       #um bei der Fehlersuche die Laufzeit zu verringern, die Funktionen 
       #nur für zwei minibatches ausführen mit dieser for-schleife:      
-        #for i in range(0,12,10):  
- #irgendwas stimmt mit testy nicht           
-            self.input = pictures[:,i:i+self.mbsize]
+        #for i in range(12,10):    
+      
+            self.inputOB = pictures[:,i:i+self.mbsize]
             testy = numbers[:,i:i+self.mbsize]
             
             self.feedforward()
             self.backprop(testy)
             
-
+    def test(self, pictures, numbers):
+        self.bias      = np.ones([1, len(pictures.transpose())]) #1x10000
+        self.inputOB = pictures     #784x10000
+        
+        self.feedforward()
+        #für jedes Testdatum ein Eintrag im Vektor
+        vec = np.zeros(len(pictures.transpose())) #1x10000
+    
+        for i in range(len(vec)):
+            #Für alle Testdaten: berechnet Index des maximalen Output-Neurons, 
+            #speichert Testdateneintrag an dieser Stelle in Vektor
+            #(1 wenn richtig erkannt, 0 wenn falsch)
+          vec[i] = numbers[np.argmax(self.output,axis = 0)[i],i]
+        print(np.sum(vec)*100/len(vec),"Prozent erkannt")
        
 network = NeuralNetwork(784, 30, 10, 10, 0.5) 
-#print(network.weights1)
 
-network.train(train_x.transpose(),train_y_dec.transpose())
-    
-#network.input = train_x.transpose()[:,0]
-#network.feedforward()
-#print(network.input)
-#print(network.weights1)
+
+#network.train(train_x.transpose(),train_y_dec.transpose())
+
+network.test(test_x.transpose(),test_y_dec.transpose())
+ 
+
+
 #print("output = ",network.output)
