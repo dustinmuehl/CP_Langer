@@ -98,7 +98,7 @@ class NeuralNetwork:
         #Fülle nun Gradientenmatrizen aus
         for i in range(self.V2size):
             for j in range(self.V1size):
-                gradw2[i][i]=delta2[i]*o1[j]
+                gradw2[i][j]=delta2[i]*o1[j]
         for i in range(self.V1size-1):
             for j in range(self.V0size):
                 gradw1[i][j]=delta1[i]*o0[j]
@@ -139,7 +139,7 @@ n = NeuralNetwork(784, 30, 10)
 #n.W2=np.loadtxt("Weights2.txt")
 
 for i in range(1):
-    n.train(train_x.T ,train_y_dec.T , 10, 5000, 0.0000001)
+    n.train(train_x.T ,train_y_dec.T , 10, 5000, 0.0001)
 
 n.feedforward(test_x.T[:,4000])
 
