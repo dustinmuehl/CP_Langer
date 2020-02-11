@@ -1,6 +1,7 @@
 import numpy as np
 import gzip # Entzipper für das Auslesen der Testdaten
 import pickle #Einlesen der Testdaten in einen Array
+import os.path
 
 # Wird nur benötigt, wenn das Bild nochmals wiedergegeben werden soll 
 import matplotlib.cm as cm
@@ -132,14 +133,35 @@ class NeuralNetwork:
         np.savetxt("Weights1.txt", self.W1)
         np.savetxt("Weights2.txt", self.W2)
 
+    #Testfunktion, die die Treffergenauigkeit misst
+    #Eingabe: Datensatz x und y
+    def test(self, x, y):
+        abstand=0
+        for j in range(y.shape[1]):
+            self.feedforward(x[:,j])
+            summe=0
+            #bestimme summe der Abweichungen eines Datenpaares
+            for i in range (self.V2size):
+                summe=summe+abs(y[i][j]-self.V2[i])
+            #Bilde Durchscnitt der Summe
+            summe=(1/self.V2size)*summe
+            #Addiere Durchscnittliche Abstände auf
+            abstand=abstand+summe
+        #Erfolgs-wk ist 1-(normierte Abstandssumme) 
+        P_erfolg=100*(1-(1/y.shape[1])*abstand)
+        print(P_erfolg,"% Erfolg")
+
 #Los geht's mit dem Rechenspaß
 n = NeuralNetwork(784, 30, 10)
 
-#n.W1=np.loadtxt("Weights1.txt")
-#n.W2=np.loadtxt("Weights2.txt")
+if os.path.exists("Weights1.txt") == True:
+    n.W1=np.loadtxt("Weights1.txt")
+    n.W2=np.loadtxt("Weights2.txt")
 
 for i in range(1):
-    n.train(train_x.T ,train_y_dec.T , 10, 5000, 0.0001)
+    n.train(train_x.T ,train_y_dec.T , 10, 5000, 0.001)
+
+n.test(test_x.T, test_y_dec.T)
 
 n.feedforward(test_x.T[:,4000])
 
