@@ -139,7 +139,7 @@ n = NeuralNetwork(784, 30, 10)
 #n.W2=np.loadtxt("Weights2.txt")
 
 for i in range(1):
-    n.train(train_x.T ,train_y_dec.T , 10, 5000, 0.5)
+    n.train(train_x.T ,train_y_dec.T , 10, 5000, 0.0000001)
 
 n.feedforward(test_x.T[:,4000])
 
