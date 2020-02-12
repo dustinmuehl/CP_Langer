@@ -111,7 +111,10 @@ class NeuralNetwork:
     #Eingabe: Datensatz x und y (Matrizen), mb-größe,
     #Anzahl Durchgänge pro Epoche, Konstante für Schrittweite 
     def train(self, x, y, m, n, c):
-        N=y.shape[1]
+        #Indexmenge, normal 0,...,49999
+        N=np.arange(y.shape[1])
+        #Permutation von Indexmenge für Epoche
+        np.random.shuffle(N)
         #führe n Anpassungen durch
         for k in range(n):
             #Schrittweite wie in Skript
@@ -120,12 +123,12 @@ class NeuralNetwork:
             #s=c
             gradw1=np.zeros((self.V1size-1,self.V0size))
             gradw2=np.zeros((self.V2size,self.V1size))
-            #wähle zufällig m Daten für Minibatch aus
+            i=k*m
             for l in range(m):
-                i=np.random.randint(N)
-                self.feedforward(x[:,i])
-                gradw1=gradw1+self.backprop(y[:,i])[0]
-                gradw2=gradw2+self.backprop(y[:,i])[1]
+                self.feedforward(x[:,N[i]])
+                gradw1=gradw1+self.backprop(y[:,N[i]])[0]
+                gradw2=gradw2+self.backprop(y[:,N[i]])[1]
+                i=i+1
             #führe Anpassung des Gewichts durch
             self.W1=self.W1-s*(1/m)*gradw1
             self.W2=self.W2-s*(1/m)*gradw2
@@ -158,12 +161,15 @@ if os.path.exists("Weights1.txt") == True:
     n.W1=np.loadtxt("Weights1.txt")
     n.W2=np.loadtxt("Weights2.txt")
 
+#n.test(test_x.T, test_y_dec.T)
+
 for i in range(1):
-    n.train(train_x.T ,train_y_dec.T , 10, 5000, 0.001)
+    n.train(train_x.T ,train_y_dec.T , 10, 100, 1)
+    n.test(test_x.T, test_y_dec.T)
 
-n.test(test_x.T, test_y_dec.T)
+#n.test(test_x.T, test_y_dec.T)
 
-n.feedforward(test_x.T[:,4000])
+#n.feedforward(test_x.T[:,4000])
 
-print("output = ", n.V2)
-print("richtig = ", test_y_dec.T[:,4000])
+#print("output = ", n.V2)
+#print("richtig = ", test_y_dec.T[:,4000])
