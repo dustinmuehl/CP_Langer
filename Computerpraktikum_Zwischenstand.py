@@ -102,7 +102,7 @@ class NeuralNetwork:
         #bekommt kompletten Trainingsdatensatz, pictures enthält x-Werte in einer 784x50000 Matrix, 
         #numbers die y-Werte in einer 10x50000 Matrix
     def train(self, pictures, numbers):
-       
+        self.bias = np.ones([1,self.mbsize])
         #die Schleife läuft in Schritten der Länge der Minibatches einmal über den Trainingsdatensatz
         for i in range(0,len(pictures),self.mbsize):
       #um bei der Fehlersuche die Laufzeit zu verringern, die Funktionen 
@@ -144,10 +144,21 @@ class NeuralNetwork:
         #um das Netzwerk zu testen, wenn der Output aus vier Neuronen besteht
     def test_bit(self, pictures, numbers):
         self.bias      = np.ones([1, len(pictures.transpose())]) #1x10000
-        self.inputOB = pictures     #784x10000
-        
+        self.inputOB = pictures     #784x10000        
         self.feedforward()
         
+        #Output wird gerundet (auf 0 oder 1)
+        gerundet = np.around(self.output) #4x10000
+        vec = np.zeros(len(pictures.transpose())) #1x10000
+        
+        #vergleicht für alle Testdaten, ob gerundeter Output mit korrektem Vektor übereinstimmt, schreibt je nachdem 0 oder 1 in den Vektor
+        for i in range(len(vec)):
+            if((gerundet[:,i]==numbers[:,i]).all()):
+                vec[i]=1
+            else:
+                vec[i]=0
+        #zählt richtig erkannte Zahlen zusammen, rechnet in Prozent um
+        print(np.sum(vec)*100/len(vec),"Prozent erkannt")
 #Ende der Klasse   
 
 
@@ -184,8 +195,12 @@ test_y_bit = np.zeros([len(test_y),4])
 for i in range(len(test_y)):
     test_y_bit[i,:] = bit[test_y[i]]        
 
+
+
 #Netzwerk wird erstellt        
 network = NeuralNetwork(784, 30, 10, 10, 3) 
+network2 = NeuralNetwork(784,30,4,10,3)
+
 
 #ein Schleifendurchlauf entspricht einer Epoche
 for i in range(20):
@@ -196,10 +211,16 @@ for i in range(20):
     shuffle_x = trainges[:,0:784]
     shuffle_y = trainges[:,784:794]
     
-    #Behelfslösung mit dem Bias, dieser muss angepasst werden, da er bei Aufruf der Testfunktion verändert wird
-    network.bias = np.ones([1,10]) 
-    
     network.train(shuffle_x.transpose(),shuffle_y.transpose())
     network.test_dec(test_x.transpose(),test_y_dec.transpose())
  
-
+for i in range(20):
+    #Um nicht in jeder epoche dieselben Minibatches zu verwenden, werden die Trainingsdaten gemischt
+    #x- und y-Werte müssen dabei zuerst zu einer Matrix verklebt, dann gemischt und dann wieder getrennt werden
+    trainges = np.concatenate((train_x.transpose(),train_y_bit.transpose())).transpose()
+    np.random.shuffle(trainges)
+    shuffle_x = trainges[:,0:784]
+    shuffle_y = trainges[:,784:794]
+    
+    network2.train(shuffle_x.transpose(),shuffle_y.transpose())
+    network2.test_bit(test_x.transpose(),test_y_bit.transpose())
