@@ -79,8 +79,8 @@ class NeuralNetwork:
     #Back-Propagation Funktion, berechne Gradienten, eingabe: Zahl y
     def backprop(self, y):
         #erstelle Leere Ableitungsmatreizen und deltas
-        #W2=np.delete(self.W2, self.W2.shape[1]-1, 1)
-        W2=self.W2
+        W2=np.delete(self.W2, self.W2.shape[1]-1, 1)
+        #W2=self.W2
         gradw1=np.zeros((self.V1size-1,self.V0size))
         gradw2=np.zeros((self.V2size,self.V1size))
         delta2=np.zeros(self.V2size)
@@ -90,7 +90,7 @@ class NeuralNetwork:
         #y=y lol
         a1=np.diag(self.A1)
         a2=np.diag(self.A2)
-        #a1=np.diag
+        #a1=self.A1
         #a2=self.A2
         o1=self.V1
         o0=self.V0
