@@ -46,7 +46,7 @@ def sig(x):
 
 #Ableitung der Sigmoid-Funktion
 def sigder(x):
-    output=np.exp(-x)/((1 + np.exp(-x))**2)
+    output=sig(x)*(1-sig(x))
     return output
 
 class NeuralNetwork:
@@ -56,9 +56,9 @@ class NeuralNetwork:
         self.V2size=V2 #|V_2|
         #erschaffe leere Layer
         self.V0=np.zeros(self.V0size)
-        self.V0_A=np.zeros(self.V1size)
+        self.A1=np.zeros(self.V1size-1)
         self.V1=np.zeros(self.V1size) #Auch V_0_O, also Output
-        self.V1_A=np.zeros(self.V2size)
+        self.A2=np.zeros(self.V2size)
         self.V2=np.zeros(self.V2size) #Auch V_1_O, also Output
         #bias als numpy Array, zum rankleben an x nachher
         self.bias=np.array([1])
@@ -70,15 +70,17 @@ class NeuralNetwork:
     def feedforward(self, x):
         self.V0=np.concatenate((x, self.bias))
 
-        self.V0_A=np.concatenate((np.dot(self.W1,self.V0),self.bias))
+        self.A1=np.dot(self.W1,self.V0)
         self.V1=np.concatenate((sig(np.dot(self.W1,self.V0)),self.bias))
 
-        self.V1_A=np.dot(self.W2,self.V1)
+        self.A2=np.dot(self.W2,self.V1)
         self.V2=sig(np.dot(self.W2,self.V1))
 
     #Back-Propagation Funktion, berechne Gradienten, eingabe: Zahl y
     def backprop(self, y):
         #erstelle Leere Ableitungsmatreizen und deltas
+        #W2=np.delete(self.W2, self.W2.shape[1]-1, 1)
+        W2=self.W2
         gradw1=np.zeros((self.V1size-1,self.V0size))
         gradw2=np.zeros((self.V2size,self.V1size))
         delta2=np.zeros(self.V2size)
@@ -86,23 +88,23 @@ class NeuralNetwork:
         #definiere Variablen wie im Skript
         h=self.V2
         #y=y lol
-        a1=self.V0_A
-        a2=self.V1_A
+        a1=np.diag(self.A1)
+        a2=np.diag(self.A2)
+        #a1=np.diag
+        #a2=self.A2
         o1=self.V1
         o0=self.V0
         #Berechne delta_T (T=2)
-        for j in range(self.V2size):
-            delta2[j]=(h[j]-y[j])*sigder(a2[j])
+        delta2=np.dot(sigder(a2),(h-y))
+        #for j in range(self.V2size):
+        #    delta2[j]=(h[j]-y[j])*sigder(a2[j])        
         #Berechne delta1    
-        for j in range(self.V1size-1):
-            delta1[j]=sigder(a1[j])*np.dot(delta2,self.W2[:,j])
+        delta1=np.dot(sigder(a1),np.dot(delta2.T,W2).T)
+        #for j in range(self.V1size-1):
+        #    delta1[j]=sigder(a1[j])*np.dot(delta2,self.W2[:,j])
         #Fülle nun Gradientenmatrizen aus
-        for i in range(self.V2size):
-            for j in range(self.V1size):
-                gradw2[i][j]=delta2[i]*o1[j]
-        for i in range(self.V1size-1):
-            for j in range(self.V0size):
-                gradw1[i][j]=delta1[i]*o0[j]
+        gradw2=np.outer(delta2,o1)
+        gradw1=np.outer(delta1,o0)
         #...und gebe diese zurück
         output=[gradw1,gradw2]        
         return output
@@ -118,9 +120,9 @@ class NeuralNetwork:
         #führe n Anpassungen durch
         for k in range(n):
             #Schrittweite wie in Skript
-            s=1/(c*(k+1))
+            #s=1/(c*(k+1))
             #Schrittweite c
-            #s=c
+            s=c
             gradw1=np.zeros((self.V1size-1,self.V0size))
             gradw2=np.zeros((self.V2size,self.V1size))
             i=k*m
@@ -133,12 +135,12 @@ class NeuralNetwork:
             self.W1=self.W1-s*(1/m)*gradw1
             self.W2=self.W2-s*(1/m)*gradw2
         #speichere Gewichte
-        np.savetxt("Weights1.txt", self.W1)
-        np.savetxt("Weights2.txt", self.W2)
+        #np.savetxt("Weights1.txt", self.W1)
+        #np.savetxt("Weights2.txt", self.W2)
 
     #Testfunktion, die die Treffergenauigkeit misst
     #Eingabe: Datensatz x und y
-    def test(self, x, y):
+    def test1(self, x, y):
         abstand=0
         for j in range(y.shape[1]):
             self.feedforward(x[:,j])
@@ -154,6 +156,16 @@ class NeuralNetwork:
         P_erfolg=100*(1-(1/y.shape[1])*abstand)
         print(P_erfolg,"% Erfolg")
 
+    #Testfunktion, die Index der maximalen Ausgabe mit richtiger Ziffer
+    #vergleicht und Anzahl übereinstimmungen printet
+    def test2(self, x, y):
+        summe=0
+        for j in range(x.shape[1]):
+            self.feedforward(x[:,j])
+            if np.argmax(self.V2)==y[j]:
+                summe=summe+1
+        print(summe,"/",x.shape[1],"erkannt")
+                
 #Los geht's mit dem Rechenspaß
 n = NeuralNetwork(784, 30, 10)
 
@@ -161,15 +173,19 @@ if os.path.exists("Weights1.txt") == True:
     n.W1=np.loadtxt("Weights1.txt")
     n.W2=np.loadtxt("Weights2.txt")
 
-#n.test(test_x.T, test_y_dec.T)
+n.feedforward(test_x.T[:,4000])
 
-for i in range(1):
-    n.train(train_x.T ,train_y_dec.T , 10, 100, 1)
-    n.test(test_x.T, test_y_dec.T)
+print("output = ", n.V2)
+print("richtig = ", test_y[4000])
 
-#n.test(test_x.T, test_y_dec.T)
+for i in range(20):
+    #c=1/(0.01*(25+i))
+    n.train(train_x.T ,train_y_dec.T , 10, 5000, 0.3)
+    print("Epoche",i)
+    n.test1(test_x.T, test_y_dec.T)
+    n.test2(test_x.T, test_y.T)
 
-#n.feedforward(test_x.T[:,4000])
 
-#print("output = ", n.V2)
-#print("richtig = ", test_y_dec.T[:,4000])
+n.feedforward(test_x.T[:,4000])
+
+print("output = ", n.V2)
