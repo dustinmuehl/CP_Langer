@@ -2,14 +2,15 @@ import numpy as np
 
 class UniversalNeuralNetwork:
     def __init__(self,L):
-        self.layercount = len(L)
+        #L ist eine Liste, die die Größen der einzelnen Layers enthält
+        self.layercount = len(L)        #Anzahl der Layers
         
-        K=[]
+        
+        K = []          #Größe der Layers mit Bias
         for i in range(self.layercount -1):
             K.append(L[i]+1)
         K.append(L[self.layercount-1])
         self.layersize = K
-        
         
         
         J1 = []
@@ -17,19 +18,21 @@ class UniversalNeuralNetwork:
             J1.append(np.zeros(self.layersize[i]))
         self.V = J1
         
-        self.bias = np.array([1])
         
+        self.bias = np.array([1])   #Bias
+    
+    
         J2 = []
-        for i in range(self.layercount -1):
-            J2.append(np.random.rand(L[i+1],self.layersize[i]))
-        self.weights = J2
-        
-        J3 = []
         for i in range(self.layercount -2):
-            J3.append(np.zeros(self.layersize[i+1] -1))
-        J3.append(np.zeros(self.layersize[self.layercount -1]))
-        self.A = J3
-        
+            J2.append(np.zeros(self.layersize[i+1] -1))
+        J2.append(np.zeros(self.layersize[self.layercount -1]))
+        self.A = J2
+    
+
+        J3 = []         #Liste der Gewichtsmatrizen
+        for i in range(self.layercount -1):
+            J3.append(np.random.rand(L[i+1],self.layersize[i]))
+        self.weights = J3    
         
         
         
@@ -46,7 +49,6 @@ class UniversalNeuralNetwork:
         for i in range(self.layercount -1):
             K2.append(np.dot(self.weights[i],self.V[i]))
         self.A = K2
-        
         
         
         
