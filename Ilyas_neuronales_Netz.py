@@ -41,13 +41,13 @@ for i in range(len(test_y)):
 
 #Sigmoid-Funktion
 def sig(x):
-    output=1/(1 + np.exp(-x))
-    return output
+    return 1/(1 + np.exp(-x))
+    
 
 #Ableitung der Sigmoid-Funktion
 def sigder(x):
-    output=sig(x)*(1-sig(x))
-    return output
+    return sig(x)*(1-sig(x))
+
 
 class NeuralNetwork:
     def __init__(self, V0, V1, V2):
@@ -63,46 +63,32 @@ class NeuralNetwork:
         #bias als numpy Array, zum rankleben an x nachher
         self.bias=np.array([1])
         #Gewichtsmatrizen konstruieren
-        self.W1=np.random.rand(self.V1size-1,self.V0size)
-        self.W2=np.random.rand(self.V2size,self.V1size)
-    
+        self.W1=0.01*np.random.rand(self.V1size-1,self.V0size)
+        self.W2=0.01*np.random.rand(self.V2size,self.V1size)
+
     #Feed-Forward Funktion, eingabe: ein einziger Bildvektor x
     def feedforward(self, x):
         self.V0=np.concatenate((x, self.bias))
 
         self.A1=np.dot(self.W1,self.V0)
-        self.V1=np.concatenate((sig(np.dot(self.W1,self.V0)),self.bias))
-
+        self.V1=np.concatenate((sig(self.A1),self.bias))
+        
         self.A2=np.dot(self.W2,self.V1)
-        self.V2=sig(np.dot(self.W2,self.V1))
+        self.V2=sig(self.A2)
 
     #Back-Propagation Funktion, berechne Gradienten, eingabe: Zahl y
     def backprop(self, y):
-        #erstelle Leere Ableitungsmatreizen und deltas
         W2=np.delete(self.W2, self.W2.shape[1]-1, 1)
-        #W2=self.W2
-        gradw1=np.zeros((self.V1size-1,self.V0size))
-        gradw2=np.zeros((self.V2size,self.V1size))
-        delta2=np.zeros(self.V2size)
-        delta1=np.zeros(self.V1size-1)
         #definiere Variablen wie im Skript
         h=self.V2
-        #y=y lol
-        a1=np.diag(self.A1)
-        a2=np.diag(self.A2)
-        #a1=self.A1
-        #a2=self.A2
+        sigdera1=np.diag(sigder(self.A1))
+        sigdera2=np.diag(sigder(self.A2))
         o1=self.V1
         o0=self.V0
         #Berechne delta_T (T=2)
-        delta2=np.dot(sigder(a2),(h-y))
-        #for j in range(self.V2size):
-        #    delta2[j]=(h[j]-y[j])*sigder(a2[j])        
+        delta2=np.dot(sigdera2,(h-y))       
         #Berechne delta1    
-        delta1=np.dot(sigder(a1),np.dot(delta2.T,W2).T)
-        #for j in range(self.V1size-1):
-        #    delta1[j]=sigder(a1[j])*np.dot(delta2,self.W2[:,j])
-        #Fülle nun Gradientenmatrizen aus
+        delta1=np.dot(sigdera1,np.dot(delta2.T,W2).T)
         gradw2=np.outer(delta2,o1)
         gradw1=np.outer(delta1,o0)
         #...und gebe diese zurück
@@ -119,25 +105,29 @@ class NeuralNetwork:
         np.random.shuffle(N)
         #führe n Anpassungen durch
         for k in range(n):
-            #Schrittweite wie in Skript
-            #s=1/(c*(k+1))
-            #Schrittweite c
-            s=c
             gradw1=np.zeros((self.V1size-1,self.V0size))
             gradw2=np.zeros((self.V2size,self.V1size))
             i=k*m
             for l in range(m):
                 self.feedforward(x[:,N[i]])
-                gradw1=gradw1+self.backprop(y[:,N[i]])[0]
-                gradw2=gradw2+self.backprop(y[:,N[i]])[1]
+                prop=self.backprop(y[:,N[i]])
+                gradw1=gradw1+prop[0]
+                gradw2=gradw2+prop[1]
                 i=i+1
             #führe Anpassung des Gewichts durch
-            self.W1=self.W1-s*(1/m)*gradw1
-            self.W2=self.W2-s*(1/m)*gradw2
+            self.W1=self.W1-c*(1/m)*gradw1
+            self.W2=self.W2-c*(1/m)*gradw2
         #speichere Gewichte
         #np.savetxt("Weights1.txt", self.W1)
         #np.savetxt("Weights2.txt", self.W2)
 
+    def traindumm(self, x, y, c):
+        for k in range(y.shape[1]):
+            self.feedforward(x[:,k])
+            prop=self.backprop(y[:,k])
+            self.W1=self.W1-c*prop[0]
+            self.W2=self.W2-c*prop[1]
+        
     #Testfunktion, die die Treffergenauigkeit misst
     #Eingabe: Datensatz x und y
     def test1(self, x, y):
@@ -181,6 +171,7 @@ print("richtig = ", test_y[4000])
 for i in range(20):
     #c=1/(0.01*(25+i))
     n.train(train_x.T ,train_y_dec.T , 10, 5000, 0.3)
+    #n.traindumm(train_x.T ,train_y_dec.T , 0.3)
     print("Epoche",i)
     n.test1(test_x.T, test_y_dec.T)
     n.test2(test_x.T, test_y.T)
