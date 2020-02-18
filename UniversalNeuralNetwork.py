@@ -11,18 +11,10 @@ with gzip.open('mnist.pkl.gz', 'rb') as f: #Öffnet das Trainingsdatenset
         #Kodierungsstandard Verwendung findet und das Trainingsdatenset in 
         #Python 2 geschrieben wurde 
 
-#überführe train_x in np Array
-train_x = np.zeros((len(train_set[0]),784))
-for i in range(len(train_set[0])): #Pixeldatenset  
-    train_x[i,:]=np.asarray(train_set[0][i])
-
+train_x = train_set[0]
 train_y = train_set[1] #Ziffern in Computerdarstellung
 
-#überführe test_x in np Array
-test_x = np.zeros((len(test_set[0]),784))
-for i in range(len(test_set[0])): #Pixeldatenset  
-    test_x[i,:]=np.asarray(test_set[0][i])
-
+test_x = test_set[0]
 test_y = test_set[1]
 
 
