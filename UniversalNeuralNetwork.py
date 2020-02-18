@@ -175,7 +175,6 @@ print("richtig = ", test_y[4001])
 for i in range(5):
     #c=1/(0.01*(25+i))
     n.train(train_x.T ,train_y_dec.T , 10, 5000, 0.3)
-    #n.traindumm(train_x.T ,train_y_dec.T , 0.3)
     print("Epoche",i)
     #n.test1(test_x.T, test_y_dec.T)
     n.test2(test_x.T, test_y.T)
